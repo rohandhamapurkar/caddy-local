@@ -1,0 +1,13 @@
+searxng.test {
+	tls internal
+	reverse_proxy searxng:8080
+}
+
+pihole.test {
+	tls internal
+	reverse_proxy pihole:80
+}
+
+http://localhost {
+	redir https://searxng.test{uri} permanent
+}

@@ -1,0 +1,13 @@
+.env
+.env.*
+*.crt
+*.cer
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+*.bak
+*.backup
+.DS_Store
+Thumbs.db
