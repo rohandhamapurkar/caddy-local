@@ -9,6 +9,38 @@ A shared HTTPS entry point for local Docker apps on Windows and macOS. This is t
 
 Both HTTP hostnames redirect to HTTPS. `http://localhost:8888` redirects to SearXNG. All published ports bind to `127.0.0.1`, so these sites are available only on this machine. `.test` is reserved for testing.
 
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser["Browser"]
+    Hosts["Hosts file<br/>searxng.test and pihole.test<br/>resolve to 127.0.0.1"]
+    Trust["Windows trust store<br/>or macOS login Keychain"]
+    DNS["This PC's DNS client"]
+
+    subgraph Network["Docker network: local-apps"]
+        Caddy["caddy-local<br/>Shared HTTPS proxy"]
+        Searxng["searxng-local<br/>SearXNG :8080"]
+        Pihole["pihole-local<br/>Pi-hole web :80 and DNS :53"]
+    end
+
+    Data[("caddy-data volume<br/>Local CA and certificates")]
+    Config[("caddy-config volume<br/>Runtime configuration")]
+
+    Hosts -.->|Local hostname lookup| Browser
+    Trust -.->|Trusts the local CA| Browser
+    Browser -->|HTTPS to 127.0.0.1:443| Caddy
+    Caddy -->|searxng.test routes to HTTP :8080| Searxng
+    Caddy -->|pihole.test routes to HTTP :80| Pihole
+    Caddy ---|/data| Data
+    Caddy ---|/config| Config
+    Data -.->|Export public root certificate only| Trust
+    DNS <-->|TCP and UDP 53 on 127.0.0.1 or ::1| Pihole
+```
+
+Caddy terminates browser HTTPS and forwards HTTP over the Docker network. HTTP on port 80 redirects to HTTPS; port 8888 provides the localhost redirect to SearXNG. Pi-hole DNS goes directly to port 53 and keeps working when Caddy is stopped. The CA private key stays in Caddy's data volume; only its public root certificate is installed on the host.
+
+
 ## Windows setup
 
 Install and start Docker Desktop with Linux containers, then:
